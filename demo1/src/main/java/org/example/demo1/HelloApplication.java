@@ -442,7 +442,7 @@ public class HelloApplication extends Application {
                 String result = "";
                 switch (comboBox.getValue()){
                     case "Name" :
-                        planes.sort(Comparator.comparing(LightPlane::getHP));
+                        planes.sort(Comparator.comparing(LightPlane::getName));
                         break;
                     case "HP" :
                         planes.sort(Comparator.comparing(LightPlane::getHP));
