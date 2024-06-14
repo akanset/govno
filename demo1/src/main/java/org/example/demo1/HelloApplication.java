@@ -1,5 +1,6 @@
 package org.example.demo1;
 
+import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.collections.FXCollections;
 import javafx.event.EventHandler;
@@ -17,20 +18,27 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import org.example.demo1.serialization.GameSerialization;
+import org.example.demo1.serialization.PlaneSerialization;
 import org.w3c.dom.ls.LSOutput;
 
-import java.io.BufferedReader;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.attribute.GroupPrincipal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Scanner;
 
 public class HelloApplication extends Application {
-    static Group mainGroup = new Group();
-    private ArrayList<LightPlane> planes = new ArrayList<>();
+    static Group mainGroup;
+    private static ArrayList<LightPlane> planes;
 
+    static {
+        planes = new ArrayList<>();
+        mainGroup = new Group();
+    }
     private void addShip(LightPlane plane) {
         Group planeGroup = new Group();
         plane.setGroup(planeGroup);
@@ -38,6 +46,21 @@ public class HelloApplication extends Application {
         mainGroup.getChildren().add(planeGroup);
         plane.draw();
     }
+    private final AnimationTimer mainTimer = new AnimationTimer() {
+        private long update = 0;
+        @Override
+        public void handle(long l) {
+            if(l - update >= 1_000_000_000) {
+                for(LightPlane plane : planes) {
+                    if(plane.getHP() < 100 && plane.isBelongs()) {
+                        plane.setHP(plane.getHP() + 5);
+                        plane.rerender();
+                    }
+                }
+                update = l;
+            }
+        }
+    };
 
     @Override
     public void start(Stage stage) throws Exception {
@@ -200,11 +223,32 @@ public class HelloApplication extends Application {
                     case F:
                         lookForSpecificPlane(planes);
                         break;
-                    case G:
-                        sortPlanes(planes);
-                        break;
                     case H:
                         countPlanes(planes);
+                    case C:
+                        for(int i = 0; i < planes.size(); i++) {
+                            if(planes.get(i).isActive()) {
+                                try {
+                                    addShip(planes.get(i).clone());
+                                } catch (CloneNotSupportedException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            }
+                        }
+                        break;
+                    case W:
+                        File file = new FileChooser().showSaveDialog(stage);
+                        if(file != null) {
+                            writeToFile(file);
+                        }
+                        break;
+                    case R:
+                        file = new FileChooser().showOpenDialog(stage);
+                        if(file != null) {
+                            planes.clear();
+                            readFromFile(file);
+                        }
+                        break;
                 }
             }
         });
@@ -214,6 +258,7 @@ public class HelloApplication extends Application {
         stage.setWidth(1280);
         stage.setScene(scene);
         stage.show();
+        mainTimer.start();
     }
 
     public static void main(String[] args) {
@@ -277,6 +322,7 @@ public class HelloApplication extends Application {
                             new CruiserPlane(nameField.getText(), (int) Double.parseDouble(layoutX.getText()), (int) Double.parseDouble(layoutY.getText()));
                 };
                 plane.setGroup(planeGroup);
+                plane.checkStats();
                 if(objActive.isSelected()) {
                     plane.setActive(true);
                 }
@@ -290,11 +336,51 @@ public class HelloApplication extends Application {
 
         Scene s = new Scene(group);
 
-        addBoatWindow.setTitle("New boat");
+        addBoatWindow.setTitle("New plane");
         addBoatWindow.setWidth(400);
         addBoatWindow.setHeight(350);
         addBoatWindow.setScene(s);
         addBoatWindow.show();
+    }
+
+    public void writeToFile(File f) {
+        ArrayList<Serializable> children = new ArrayList<>();
+        planes.stream().forEach(x -> children.add(new PlaneSerialization(x)));
+        GameSerialization gs = new GameSerialization(children);
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        try {
+            ObjectOutputStream oos = new ObjectOutputStream(bos);
+            oos.writeObject(gs);
+            oos.flush();
+            byte [] data = bos.toByteArray();
+            FileOutputStream byteStream = new FileOutputStream(f);
+            byteStream.write(data);
+            byteStream.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void readFromFile (File f) {
+
+        GameSerialization gs = null;
+
+        try {
+            FileInputStream fileStream = new FileInputStream(f);
+            ObjectInputStream in = new ObjectInputStream(fileStream);
+
+            gs = (GameSerialization)in.readObject();
+
+            in.close();
+            fileStream.close();
+        } catch(IOException | ClassNotFoundException ex) {
+            ex.printStackTrace();
+        }
+
+        assert gs != null;
+        for(int i = 0; i < gs.getChildren().size(); i++) {
+            addShip(((PlaneSerialization) gs.getChildren().get(i)).toPlane());
+        }
     }
     public void planesNoBelong(ArrayList<LightPlane> planes) {
         ArrayList <LightPlane> noBelong = new ArrayList<>();
@@ -312,18 +398,45 @@ public class HelloApplication extends Application {
         VBox box = new VBox();
         Group group = new Group();
 
+        ComboBox<String> comboBox = new ComboBox<>(
+                FXCollections.observableArrayList("Name", "HP", "Speed")
+        );
+        comboBox.setValue("...");
+
         Label title = new Label("Planes that are NOT on any planet: ");
         title.setFont(Font.font("Times New Roman", 18));
 
         Text planeList = new Text();
-        planeList.setText(lineToPut);
+
+        Button searchBtn = new Button("Sort!");
+        searchBtn.setFont(Font.font("Times New Roman", 14));
 
         box.setSpacing(10);
-        box.getChildren().addAll(title, planeList);
+        box.getChildren().addAll(title, comboBox, searchBtn, planeList);
 
         box.setAlignment(Pos.CENTER);
 
         group.getChildren().add(box);
+
+        searchBtn.setOnMouseClicked(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent mouseEvent) {
+                String result = "";
+                switch (comboBox.getValue()){
+                    case "Name" :
+                        noBelong.sort(Comparator.comparing(LightPlane::getName));
+                        break;
+                    case "HP" :
+                        noBelong.sort(Comparator.comparing(LightPlane::getHP));
+                    case "Speed" :
+                        noBelong.sort(Comparator.comparing(LightPlane::getSpeed));
+                }
+                for(LightPlane plane : noBelong) {
+                    result += plane.toString();
+                }
+                planeList.setText(result);
+            }
+        });
 
         Scene s = new Scene(group);
 
@@ -380,11 +493,11 @@ public class HelloApplication extends Application {
 
                 String result = "";
 
-                for(LightPlane plane : planes) {
-                    if(plane.getName().equals(name)) {
-                        if(plane.getHP() == health) {
-                            if(plane.getSpeed() == speed) {
-                                if(plane.getDamage() == damage) {
+                for (LightPlane plane : planes) {
+                    if (plane.getName().equals(name)) {
+                        if (plane.getHP() == health) {
+                            if (plane.getSpeed() == speed) {
+                                if (plane.getDamage() == damage) {
                                     String temp = plane.getClass().getSimpleName() + " " + plane.getName() + "; X: " +
                                             plane.getX() + ", Y: " + plane.getY() + "; ";
                                     String onPlanet = plane.isBelongs() ? "location: on planet " + plane.getCurrentPlanet() : "location: in outer space";
@@ -395,10 +508,9 @@ public class HelloApplication extends Application {
                         }
                     }
                 }
-                if(result.isBlank() && result instanceof String) {
+                if (result.isBlank() && result instanceof String) {
                     field.setText("No planes found!");
-                }
-                else {
+                } else {
                     field.setText(result);
                 }
             }
@@ -412,58 +524,6 @@ public class HelloApplication extends Application {
         lookForSpecificPlane.setScene(s);
         lookForSpecificPlane.show();
     }
-    public void sortPlanes(ArrayList<LightPlane> planes) {
-        Stage sortPlanes = new Stage();
-        Group group = new Group();
-        VBox box = new VBox();
-
-        Label choiceLbl = new Label("Choose the way planes need to be sorted:");
-        choiceLbl.setFont(Font.font("Times New Roman", 14));
-
-        ComboBox<String> comboBox = new ComboBox<>(
-                FXCollections.observableArrayList("Name", "HP", "Speed")
-        );
-        comboBox.setValue("...");
-
-        Button searchBtn = new Button("Sort!");
-        searchBtn.setFont(Font.font("Times New Roman", 14));
-
-        Text list = new Text();
-        list.setFont(Font.font("Times New Roman", 16));
-
-        box.setSpacing(10);
-        box.getChildren().addAll(choiceLbl, comboBox, searchBtn, list);
-        box.setAlignment(Pos.CENTER);
-        group.getChildren().add(box);
-
-        searchBtn.setOnMouseClicked(new EventHandler<MouseEvent>() {
-            @Override
-            public void handle(MouseEvent mouseEvent) {
-                String result = "";
-                switch (comboBox.getValue()){
-                    case "Name" :
-                        planes.sort(Comparator.comparing(LightPlane::getName));
-                        break;
-                    case "HP" :
-                        planes.sort(Comparator.comparing(LightPlane::getHP));
-                    case "Speed" :
-                        planes.sort(Comparator.comparing(LightPlane::getSpeed));
-                }
-                for(LightPlane plane : planes) {
-                    result += plane.toString();
-                }
-                list.setText(result);
-            }
-        });
-        Scene s = new Scene(group);
-
-        sortPlanes.setTitle("Sort planes");
-        sortPlanes.setWidth(500);
-        sortPlanes.setHeight(500);
-        sortPlanes.setScene(s);
-        sortPlanes.show();
-    }
-
     public void countPlanes(ArrayList<LightPlane> planes) {
         Stage countPlanes = new Stage();
         Group group = new Group();

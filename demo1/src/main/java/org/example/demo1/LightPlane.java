@@ -1,13 +1,11 @@
 package org.example.demo1;
 
+import javafx.collections.FXCollections;
 import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.Group;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.RadioButton;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.effect.Light;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -97,6 +95,10 @@ public class LightPlane implements Cloneable{
 
     public String getCurrentPlanet() {
         return currentPlanet;
+    }
+
+    public String[] getSystemStats() {
+        return systemStats;
     }
 
     public void setCurrentPlanet(String currentPlanet) {
@@ -236,8 +238,10 @@ public class LightPlane implements Cloneable{
     @Override
     public LightPlane clone() throws CloneNotSupportedException {
         LightPlane cloned = (LightPlane) super.clone();
-        String[] arrayToSet = (String[]) Arrays.stream(this.systemStats).toArray();
-        cloned.setSystemStats(arrayToSet);
+        cloned.systemStats = Arrays.copyOf(this.systemStats, this.systemStats.length);
+        cloned.imageNormal = this.imageNormal;
+        cloned.imageReversed = this.imageReversed;
+
         return cloned;
     }
     @Override
@@ -248,7 +252,6 @@ public class LightPlane implements Cloneable{
                 + ", Damage = " + this.dmg
                 + ", Speed = " + this.spd
                 + "}" + '\n';
-        //res += this.name + "'s system {" + systemStats[0] + systemStats[1] + systemStats[2] + systemStats[3];
         return res;
     }
     public void checkStats() {
@@ -312,9 +315,15 @@ public class LightPlane implements Cloneable{
         nameLabel.setLayoutX(this.x);
         nameLabel.setLayoutY(this.y+2);
 
-        Label coordsLabel = new Label("X: " + this.x + "; Y: " + this.y);
+        Label currentHP = new Label("HP: " + (int) this.getHP());
+        currentHP.setLayoutX(this.x + this.size - 45);
+        currentHP.setLayoutY(this.y - 20);
+        currentHP.setStyle("-fx-font-weight: bold");
+        currentHP.setTextFill(Color.color(1, 1, 1));
+
+        Label coordsLabel = new Label("X: " + this.x + '\n' + "Y: " + this.y);
         coordsLabel.setTextFill(Color.color(1, 1, 1));
-        coordsLabel.setLayoutY(this.y - 20);
+        coordsLabel.setLayoutY(this.y - 40);
         coordsLabel.setLayoutX(this.x);
 
         group.getChildren().add(rec);
@@ -322,6 +331,7 @@ public class LightPlane implements Cloneable{
         group.getChildren().add(nameLabel);
         group.getChildren().add(coordsLabel);
         group.getChildren().add(activeLbl);
+        group.getChildren().add(currentHP);
     }
 
     public void rerender() {
@@ -341,16 +351,13 @@ public class LightPlane implements Cloneable{
     public String getName() {
         return this.name;
     }
-
     public static int getSize() {
         return size;
     }
-
     public boolean isBelongs() {
         return belongs;
     }
-
-    //SETTERS
+    //SETTER
     public void setDamage(int n) {
         this.dmg = n;
     }
@@ -366,7 +373,6 @@ public class LightPlane implements Cloneable{
     public void setGroup(Group group) {
         this.group = group;
     }
-
     public Group getGroup() {
         return group;
     }

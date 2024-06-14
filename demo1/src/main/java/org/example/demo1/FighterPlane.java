@@ -7,7 +7,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 
-public class FighterPlane extends LightPlane {
+public class FighterPlane extends LightPlane implements Cloneable{
     private String imageNormalPath = "file:src/main/resources/org/example/demo1/fighter.png";
     private String imageReversedPath = "file:src/main/resources/org/example/demo1/fighter_reversed.png";
     private ImageView image = new ImageView();
@@ -75,15 +75,21 @@ public class FighterPlane extends LightPlane {
         nameLabel.setLayoutX(this.x);
         nameLabel.setLayoutY(this.y+2);
 
-        Label coordsLabel = new Label("X: " + this.x + "; Y: " + this.y);
+        Label currentHP = new Label("HP: " + (int) this.getHP());
+        currentHP.setLayoutX(this.x + this.size - 45);
+        currentHP.setLayoutY(this.y - 20);
+        currentHP.setStyle("-fx-font-weight: bold");
+        currentHP.setTextFill(Color.color(1, 1, 1));
+
+        Label coordsLabel = new Label("X: " + this.x + '\n' + "Y: " + this.y);
         coordsLabel.setTextFill(Color.color(1, 1, 1));
-        coordsLabel.setLayoutY(this.y - 20);
-        coordsLabel.setLayoutX(this.getX());
+        coordsLabel.setLayoutY(this.y - 40);
+        coordsLabel.setLayoutX(this.x);
 
         Label activeLbl = new Label("Active: " + this.isActive);
         ((Runnable) () -> activeLbl.setTextFill(isActive ? Color.DARKGREEN : Color.RED)).run();
         activeLbl.setStyle("-fx-font-weight: bold");
-        activeLbl.setLayoutX(this.x + 17);
+        activeLbl.setLayoutX(this.getX() + 17);
         activeLbl.setLayoutY(this.y + size);
 
         group.getChildren().add(rec);
@@ -91,5 +97,6 @@ public class FighterPlane extends LightPlane {
         group.getChildren().add(nameLabel);
         group.getChildren().add(coordsLabel);
         group.getChildren().add(activeLbl);
+        group.getChildren().add(currentHP);
     }
 }
