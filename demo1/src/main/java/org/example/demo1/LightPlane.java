@@ -239,8 +239,11 @@ public class LightPlane implements Cloneable{
     public LightPlane clone() throws CloneNotSupportedException {
         LightPlane cloned = (LightPlane) super.clone();
         cloned.systemStats = Arrays.copyOf(this.systemStats, this.systemStats.length);
-        cloned.imageNormal = this.imageNormal;
-        cloned.imageReversed = this.imageReversed;
+        cloned.image = new ImageView();
+        cloned.imageNormal = new ImageView(imageNormalPath);
+        cloned.imageReversed = new ImageView(imageReversedPath);
+        cloned.setX(0);
+        cloned.setY(0);
 
         return cloned;
     }

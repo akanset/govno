@@ -31,7 +31,7 @@ public class FighterPlane extends LightPlane implements Cloneable{
     }
     @Override
     public String toString(){
-        String res = "Fighter Plane{"
+        String res = "Fighter Plane {"
                 + "Name = " + this.name
                 + ", HP = " + this.hp
                 + ", Damage = " + this.dmg

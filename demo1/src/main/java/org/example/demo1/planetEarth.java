@@ -1,10 +1,15 @@
 package org.example.demo1;
 
+import javafx.collections.FXCollections;
+import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.Group;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
@@ -14,6 +19,7 @@ import javafx.stage.Stage;
 
 import java.text.Normalizer;
 import java.util.ArrayList;
+import java.util.Comparator;
 
 public class planetEarth {
     private String name = "EARTH";
@@ -96,17 +102,48 @@ public class planetEarth {
         Label planeList = new Label("Current planes on planet " + this.name);
         planeList.setFont(Font.font("Times New Roman", 14));
 
+        Label sortLabel = new Label("Choose the sorting criteria:");
+        sortLabel.setFont(Font.font("Times New Roman", 14));
+
+        ComboBox<String> comboBox = new ComboBox<>(
+                FXCollections.observableArrayList("Name", "HP", "Speed")
+        );
+        comboBox.setValue("...");
+
         Text list = new Text();
-        String line = "";
-        for(int i = 0; i < this.getCurrentPlanes().size(); i+=1) {
-            line += this.getCurrentPlanes().get(i).toString();
-            line += '\n';
-        }
-        list.setText(line);
-        list.setFont(Font.font("Times New Roman", 16));
+
+        ArrayList<LightPlane> arr = new ArrayList<>();
+
+        Button searchBtn = new Button("Sort!");
+        searchBtn.setFont(Font.font("Times New Roman", 14));
+        searchBtn.setOnMouseClicked(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent mouseEvent) {
+                StringBuilder line = new StringBuilder();
+                arr.clear();
+                arr.addAll(getCurrentPlanes());
+                switch (comboBox.getValue()) {
+                    case "Name" :
+                        arr.sort(Comparator.comparing(LightPlane::getName));
+                        break;
+                    case "HP" :
+                        arr.sort(Comparator.comparing(LightPlane::getHP));
+                        break;
+                    case "Speed" :
+                        arr.sort(Comparator.comparing(LightPlane::getSpeed));
+                        break;
+                }
+                line.setLength(0);
+                for(LightPlane plane : arr) {
+                    line.append(plane.toString()).append('\n');
+                }
+                list.setText("");
+                list.setText(String.valueOf(line));
+            }
+        });
 
         box.setSpacing(10);
-        box.getChildren().addAll(planeList, list);
+        box.getChildren().addAll(planeList, sortLabel, comboBox, searchBtn, list);
 
         box.setAlignment(Pos.CENTER);
         group.getChildren().add(box);

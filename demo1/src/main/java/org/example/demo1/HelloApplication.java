@@ -8,16 +8,20 @@ import javafx.fxml.FXMLLoader;
 import javafx.geometry.Pos;
 import javafx.scene.Group;
 import javafx.scene.Scene;
+import javafx.scene.SnapshotParameters;
 import javafx.scene.control.*;
 import javafx.scene.effect.Light;
 import javafx.scene.image.ImageView;
+import javafx.scene.image.WritableImage;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
+import javafx.scene.transform.Scale;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.example.demo1.serialization.GameSerialization;
@@ -226,13 +230,17 @@ public class HelloApplication extends Application {
                     case H:
                         countPlanes(planes);
                     case C:
-                        for(int i = 0; i < planes.size(); i++) {
+                        int j = planes.size();
+                        for(int i = 0; i < j; i++) {
                             if(planes.get(i).isActive()) {
                                 try {
                                     addShip(planes.get(i).clone());
                                 } catch (CloneNotSupportedException e) {
                                     throw new RuntimeException(e);
                                 }
+                            }
+                            for(LightPlane plane : planes) {
+                                plane.rerender();
                             }
                         }
                         break;
@@ -253,7 +261,7 @@ public class HelloApplication extends Application {
             }
         });
 
-        stage.setTitle("lab4");
+        stage.setTitle("Cross-Planet Air Fight");
         stage.setHeight(720);
         stage.setWidth(1280);
         stage.setScene(scene);
@@ -428,8 +436,10 @@ public class HelloApplication extends Application {
                         break;
                     case "HP" :
                         noBelong.sort(Comparator.comparing(LightPlane::getHP));
+                        break;
                     case "Speed" :
                         noBelong.sort(Comparator.comparing(LightPlane::getSpeed));
+                        break;
                 }
                 for(LightPlane plane : noBelong) {
                     result += plane.toString();

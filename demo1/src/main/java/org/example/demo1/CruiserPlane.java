@@ -28,7 +28,7 @@ public class CruiserPlane extends FighterPlane{
 
     @Override
     public String toString(){
-        String res = "Cruiser Plane{"
+        String res = "Cruiser Plane {"
                 + "Name = " + this.name
                 + ", HP = " + this.hp
                 + ", Damage = " + this.dmg
